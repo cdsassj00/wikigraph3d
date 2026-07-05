@@ -48,8 +48,26 @@ const HTML_HEAD_B = `— 3D Document Graph</title>
   :root { color-scheme: dark; }
   html, body { margin: 0; padding: 0; height: 100%; background: #0b0e14; color: #dfe6ee; font-family: "Inter", "Noto Sans KR", "Segoe UI", sans-serif; overflow: hidden; }
   #graph { position: fixed; inset: 0; }
+  #cdsaBanner {
+    position: fixed; top: 0; left: 0; right: 0; height: 42px; z-index: 50;
+    display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+    background: linear-gradient(90deg, rgba(4, 18, 28, .96), rgba(11, 42, 48, .96), rgba(28, 31, 39, .96));
+    border-bottom: 1px solid rgba(125, 211, 252, .28);
+    box-shadow: 0 10px 32px rgba(0,0,0,.28);
+  }
+  #cdsaBanner a {
+    color: #ecfeff; text-decoration: none; font-weight: 700; font-size: 14px; letter-spacing: 0;
+    display: inline-flex; align-items: center; gap: 10px; padding: 0 14px; height: 100%;
+  }
+  #cdsaBanner a:hover { color: #ffffff; }
+  #cdsaBanner .mark {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 48px; height: 22px; border-radius: 4px;
+    background: #facc15; color: #111827; font-size: 12px; font-weight: 800;
+  }
+  #cdsaBanner .url { color: #a7f3d0; font-weight: 500; }
   #panel {
-    position: fixed; top: 0; right: 0; width: var(--panel-width, 420px); max-width: 92vw; height: 100%;
+    position: fixed; top: 42px; right: 0; width: var(--panel-width, 420px); max-width: 92vw; height: calc(100% - 42px);
     background: rgba(15, 18, 26, 0.96); border-left: 1px solid #2a3140;
     box-shadow: -8px 0 24px rgba(0,0,0,.4); transform: translateX(100%);
     transition: transform .25s ease; overflow-y: auto; padding: 20px 22px 20px 28px; box-sizing: border-box; z-index: 20;
@@ -71,7 +89,7 @@ const HTML_HEAD_B = `— 3D Document Graph</title>
   #panel .content code { background: #1a212e; padding: 1px 5px; border-radius: 4px; }
   #panel .content pre { background: #1a212e; padding: 10px; border-radius: 6px; overflow-x: auto; }
   #closeBtn { position: absolute; top: 12px; right: 14px; background: none; border: none; color: #8b96a8; font-size: 1.3em; cursor: pointer; }
-  #hud { position: fixed; top: 14px; left: 14px; z-index: 15; display: flex; flex-direction: column; gap: 8px; max-width: 340px; }
+  #hud { position: fixed; top: 56px; left: 14px; z-index: 15; display: flex; flex-direction: column; gap: 8px; max-width: 340px; }
   #hud input {
     background: #131722; border: 1px solid #2a3140; color: #dfe6ee; border-radius: 6px;
     padding: 8px 10px; font-size: .9em; width: 260px;
@@ -80,7 +98,7 @@ const HTML_HEAD_B = `— 3D Document Graph</title>
   #legend .item { display: flex; align-items: center; gap: 6px; margin: 3px 0; cursor: pointer; }
   #legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
   #title { font-size: .82em; color: #6d7788; }
-  #suggestList { position: fixed; top: 62px; left: 14px; z-index: 16; background: #131722; border: 1px solid #2a3140; border-radius: 6px; max-height: 260px; overflow-y: auto; width: 260px; display: none; }
+  #suggestList { position: fixed; top: 104px; left: 14px; z-index: 16; background: #131722; border: 1px solid #2a3140; border-radius: 6px; max-height: 260px; overflow-y: auto; width: 260px; display: none; }
   #suggestList div { padding: 6px 10px; font-size: .85em; cursor: pointer; }
   #suggestList div:hover { background: #202838; }
   #suggestList div .snippet { color: #8b96a8; font-size: .85em; margin-top: 2px; }
@@ -96,7 +114,7 @@ const HTML_HEAD_B = `— 3D Document Graph</title>
     border-radius: 14px; padding: 4px 6px 4px 12px; font-size: .8em; width: fit-content;
   }
   #filterChip button { background: none; border: none; color: #8b96a8; cursor: pointer; font-size: 1em; padding: 0 4px; }
-  #listPanel { position: fixed; inset: 0; background: #0b0e14; z-index: 12; display: none; padding: 100px 24px 24px; box-sizing: border-box; overflow-y: auto; }
+  #listPanel { position: fixed; inset: 42px 0 0 0; background: #0b0e14; z-index: 12; display: none; padding: 100px 24px 24px; box-sizing: border-box; overflow-y: auto; }
   #listPanel.open { display: block; }
   #listPanel table { border-collapse: collapse; width: 100%; max-width: 980px; margin: 0 auto; }
   #listPanel th { text-align: left; font-size: .78em; color: #8b96a8; padding: 6px 10px; border-bottom: 1px solid #2a3140; position: sticky; top: 0; background: #0b0e14; }
@@ -106,7 +124,7 @@ const HTML_HEAD_B = `— 3D Document Graph</title>
   #listPanel .snippet { color: #75809a; font-size: .85em; }
   #listCount { max-width: 980px; margin: 0 auto 10px; color: #8b96a8; font-size: .85em; }
   #aiPanel {
-    position: fixed; top: 0; left: 0; width: var(--ai-panel-width, 440px); max-width: 92vw; height: 100%;
+    position: fixed; top: 42px; left: 0; width: var(--ai-panel-width, 440px); max-width: 92vw; height: calc(100% - 42px);
     background: rgba(12, 16, 24, 0.97); border-right: 1px solid #2a3140;
     box-shadow: 8px 0 24px rgba(0,0,0,.38); transform: translateX(-100%);
     transition: transform .25s ease; overflow-y: auto; padding: 20px 22px; box-sizing: border-box; z-index: 22;
@@ -173,6 +191,13 @@ const HTML_HEAD_B = `— 3D Document Graph</title>
   }
   #guideCard button.primary { background: #2a476b; border-color: #5aa5d8; color: #fff; }
   @media (max-width: 680px) {
+    #cdsaBanner { height: 48px; justify-content: flex-start; overflow-x: auto; }
+    #cdsaBanner a { justify-content: flex-start; min-width: max-content; font-size: 13px; }
+    #cdsaBanner .url { display: none; }
+    #hud { top: 62px; }
+    #suggestList { top: 110px; }
+    #panel, #aiPanel { top: 48px; height: calc(100% - 48px); }
+    #listPanel { inset: 48px 0 0 0; }
     #hud { max-width: calc(100vw - 28px); }
     #guideCard { left: 14px !important; right: 14px; width: auto; }
   }
@@ -182,6 +207,13 @@ const HTML_HEAD_B = `— 3D Document Graph</title>
 </style>
 </head>
 <body>
+<div id="cdsaBanner">
+  <a href="https://cdsa.kr/?utm_source=wikigraph3d&utm_medium=banner&utm_campaign=cdsa_ai_education&utm_content=generated_graph_header" target="_blank" rel="noopener noreferrer" aria-label="AI교육은 한국데이터사이언티스트협회 CDSA">
+    <span class="mark">CDSA</span>
+    <span>AI교육은 한국데이터사이언티스트협회 CDSA</span>
+    <span class="url">cdsa.kr</span>
+  </a>
+</div>
 <div id="graph"></div>
 <div id="hud">
   <div id="title">Document Graph · <span id="countLabel"></span></div>
