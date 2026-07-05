@@ -1,10 +1,11 @@
 {
   "name": "wikigraph3d",
-  "version": "0.1.0",
-  "description": "Point it at a folder of documents (.md/.txt/.pdf/.docx/.pptx) and get back one self-contained 3D searchable knowledge-graph HTML file. No server, no build step, no API key.",
+  "version": "0.3.0",
+  "description": "Local GUI and CLI for turning a folder of documents into a 3D searchable knowledge graph, with optional Ollama AI search.",
   "type": "module",
   "bin": {
-    "wikigraph3d": "bin/cli.js"
+    "wikigraph3d": "bin/cli.js",
+    "wikigraph3d-gui": "bin/cli.js"
   },
   "engines": {
     "node": ">=18"
@@ -18,6 +19,8 @@
     "knowledge-graph",
     "3d-force-graph",
     "document-search",
+    "local-ai",
+    "ollama",
     "wiki",
     "obsidian-alternative",
     "cli"

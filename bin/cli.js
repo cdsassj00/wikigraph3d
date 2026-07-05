@@ -2,23 +2,49 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFile } from "node:child_process";
-import { scanFolder, SUPPORTED_EXT } from "../src/scan.js";
-import { extractMarkdown } from "../src/extract/markdown.js";
-import { extractPdf } from "../src/extract/pdf.js";
-import { extractDocx } from "../src/extract/docx.js";
-import { extractPptx } from "../src/extract/pptx.js";
-import { buildGraph } from "../src/linker.js";
-import { renderHtml } from "../src/render.js";
+import { SUPPORTED_EXT } from "../src/scan.js";
+import { buildGraphHtmlFromFolder } from "../src/build.js";
+import { startGui } from "../src/gui.js";
+import {
+  DEFAULT_OLLAMA_BASE_URL,
+  DEFAULT_OLLAMA_MODEL,
+} from "../src/ollama.js";
+
+function parsePositiveInt(raw, flagName) {
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${flagName} expects a positive integer.`);
+  }
+  return value;
+}
 
 function parseArgs(argv) {
   // 사용자 입장에서는 명령 한 번 쳤을 때 뭔가 "눈에 보여야" 직관적이다 —
   // 그래서 자동으로 브라우저를 여는 쪽을 기본값으로 하고, 원치 않으면 --no-open으로 끄게 한다.
-  const args = { folder: null, out: null, open: true };
+  const args = {
+    folder: null,
+    out: null,
+    open: true,
+    ollama: false,
+    ollamaModel: DEFAULT_OLLAMA_MODEL,
+    ollamaUrl: DEFAULT_OLLAMA_BASE_URL,
+    ollamaLimit: null,
+    gui: false,
+    host: "127.0.0.1",
+    port: 0,
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--out" || a === "-o") args.out = argv[++i];
     else if (a === "--open") args.open = true;
     else if (a === "--no-open") args.open = false;
+    else if (a === "--gui") args.gui = true;
+    else if (a === "--host") args.host = argv[++i] || args.host;
+    else if (a === "--port") args.port = Number(argv[++i] || 0);
+    else if (a === "--ollama" || a === "--ai") args.ollama = true;
+    else if (a === "--ollama-model") args.ollamaModel = argv[++i] || DEFAULT_OLLAMA_MODEL;
+    else if (a === "--ollama-url") args.ollamaUrl = argv[++i] || DEFAULT_OLLAMA_BASE_URL;
+    else if (a === "--ollama-limit") args.ollamaLimit = parsePositiveInt(argv[++i], a);
     else if (a === "--help" || a === "-h") args.help = true;
     else if (!args.folder) args.folder = a;
   }
@@ -26,39 +52,41 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log(`wikigraph3d — turn a folder of documents into a single 3D searchable graph HTML file
+  console.log(`wikigraph3d — local document wiki graph builder
 
 Usage:
-  npx github:cdsassj00/wikigraph3d <folder> [--out output.html] [--no-open]
+  wikigraph3d
+  wikigraph3d --gui
+  wikigraph3d <folder> [--out output.html] [--no-open] [--ollama]
 
 Supported file types: ${[...SUPPORTED_EXT].join(", ")}
 
 Options:
-  --out, -o <file>   Output HTML path (default: <folder>-graph.html next to the folder)
-  --no-open          Don't open the result in your browser automatically (default: opens it)
-  --help, -h         Show this help
+  --gui                  Start the local browser GUI (default when no folder is given)
+  --host <host>          GUI host (default: 127.0.0.1)
+  --port <port>          GUI port (default: a free random port)
+  --out, -o <file>       Output HTML path (default: <folder>-graph.html next to the folder)
+  --no-open              Don't open the result in your browser automatically (default: opens it)
+  --ollama, --ai         Add local Ollama summaries/tags while building the graph
+  --ollama-model <name>  Ollama model to use (default: ${DEFAULT_OLLAMA_MODEL})
+  --ollama-url <url>     Ollama server URL (default: ${DEFAULT_OLLAMA_BASE_URL})
+  --ollama-limit <n>     Enrich only the first n documents
+  --help, -h             Show this help
 `);
-}
-
-async function extractOne(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  try {
-    if (ext === ".md" || ext === ".markdown" || ext === ".txt") return await extractMarkdown(filePath);
-    if (ext === ".pdf") return await extractPdf(filePath);
-    if (ext === ".docx") return await extractDocx(filePath);
-    if (ext === ".pptx") return await extractPptx(filePath);
-  } catch (err) {
-    console.warn(`  ! skipped (parse error): ${filePath} — ${err.message}`);
-    return null;
-  }
-  return null;
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (args.help || !args.folder) {
+  if (args.help) {
     printHelp();
-    process.exit(args.help ? 0 : 1);
+    process.exit(0);
+  }
+
+  if (args.gui || !args.folder) {
+    const gui = await startGui({ host: args.host, port: args.port, open: args.open });
+    console.log(`wikigraph3d GUI running at ${gui.url}`);
+    if (!args.open) console.log(`Open it manually: ${gui.url}`);
+    return;
   }
 
   const root = path.resolve(args.folder);
@@ -67,35 +95,52 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Scanning ${root} ...`);
-  const files = scanFolder(root);
-  if (!files.length) {
+  console.log(`Scanning and extracting ${root} ...`);
+  const title = path.basename(root);
+  const result = await buildGraphHtmlFromFolder(root, {
+    title,
+    ollama: args.ollama,
+    ollamaModel: args.ollamaModel,
+    ollamaUrl: args.ollamaUrl,
+    ollamaLimit: args.ollamaLimit,
+    onParseError(filePath, err) {
+      console.warn(`  ! skipped (parse error): ${filePath} — ${err.message}`);
+    },
+    onAiProgress(event) {
+      if (event.type === "start") {
+        console.log(`  AI ${event.index}/${event.total}: ${event.node.title}`);
+      } else if (event.type === "error") {
+        console.warn(`  ! AI skipped: ${event.node.title} — ${event.error.message}`);
+      }
+    },
+  });
+
+  if (!result.counts.files) {
     console.error(`No supported documents found (${[...SUPPORTED_EXT].join(", ")}).`);
     process.exit(1);
   }
-  console.log(`Found ${files.length} documents. Extracting...`);
-
-  const extracted = [];
-  for (const filePath of files) {
-    const result = await extractOne(filePath);
-    if (result && result.body) extracted.push({ filePath, result });
-  }
-  console.log(`Extracted ${extracted.length}/${files.length} documents (empty/failed ones skipped).`);
-
-  const graph = buildGraph(root, extracted);
-  const wikilinkCount = graph.links.filter((l) => l.kind === "wikilink").length;
-  const folderCount = graph.links.filter((l) => l.kind === "folder").length;
-  const similarCount = graph.links.filter((l) => l.kind === "similar").length;
+  console.log(`Extracted ${result.counts.extracted}/${result.counts.files} documents (empty/failed ones skipped).`);
   console.log(
-    `Graph: ${graph.nodes.length} nodes, ${graph.links.length} links ` +
-      `(wikilink ${wikilinkCount} + folder ${folderCount} + similar ${similarCount})`
+    `Graph: ${result.counts.nodes} nodes, ${result.counts.links} links ` +
+      `(wikilink ${result.counts.wikilink} + folder ${result.counts.folder} + similar ${result.counts.similar})`
   );
 
-  const title = path.basename(root);
-  const html = renderHtml({ title, ...graph });
+  if (args.ollama) {
+    if (result.ai.available) {
+      console.log(
+        `Ollama: enriched ${result.ai.enriched}/${result.counts.nodes} documents` +
+          `${result.ai.failed ? ` (${result.ai.failed} failed)` : ""}` +
+          `${result.ai.skipped ? `, skipped ${result.ai.skipped}` : ""}.`
+      );
+    } else {
+      console.warn(`Ollama: ${result.ai.message}`);
+      console.warn(result.ai.setupHint);
+      console.warn("Continuing without AI summaries. The graph and local text search will still work.");
+    }
+  }
 
   const outPath = path.resolve(args.out || `${root}-graph.html`);
-  fs.writeFileSync(outPath, html, "utf-8");
+  fs.writeFileSync(outPath, result.html, "utf-8");
   console.log(`Wrote ${outPath}`);
 
   if (args.open) {
