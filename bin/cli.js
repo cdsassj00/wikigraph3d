@@ -129,9 +129,16 @@ Options:
   --ollama-model <name>  Ollama model to use (default: ${DEFAULT_OLLAMA_MODEL})
   --ollama-url <url>     Ollama server URL (default: ${DEFAULT_OLLAMA_BASE_URL})
   --ollama-limit <n>     Enrich only the first n documents
-  --doctor               Check Node/npm/npx and optional Ollama readiness
+  --doctor               Check Node/npm/npx and optional Ollama readiness, then exit
   --help, -h             Show this help
 `);
+}
+
+function printDoctorLaunchHint() {
+  console.log("");
+  console.log("This was a diagnostics-only check. It does not open the GUI or read documents.");
+  console.log("To start the wikigraph3d GUI, run:");
+  console.log("  npx --yes github:cdsassj00/wikigraph3d#master");
 }
 
 async function runDoctor(args) {
@@ -153,12 +160,15 @@ async function runDoctor(args) {
   });
   if (!ollama.ok) {
     console.log(`Ollama: not ready (${ollama.message})`);
+    console.log("Ollama is optional. The GUI and normal document graph still work without it.");
     console.log(ollama.setupHint);
+    printDoctorLaunchHint();
     return;
   }
   console.log(`Ollama: running at ${ollama.baseUrl}`);
   console.log(`Ollama model ${args.ollamaModel}: ${ollama.modelAvailable ? "installed" : "not installed"}`);
   if (!ollama.modelAvailable) console.log(`Run: ollama pull ${args.ollamaModel}`);
+  printDoctorLaunchHint();
 }
 
 async function main() {

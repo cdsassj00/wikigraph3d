@@ -1,6 +1,6 @@
 {
   "name": "wikigraph3d",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Local GUI and CLI for turning a folder of documents into a 3D searchable knowledge graph, with optional Ollama AI search.",
   "type": "module",
   "bin": {

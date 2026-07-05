@@ -22,7 +22,8 @@ winget install --id OpenJS.NodeJS.LTS -e --source winget
 npx --yes github:cdsassj00/wikigraph3d#master
 ```
 
-환경 확인만 하고 싶을 때:
+환경 확인만 하고 싶을 때는 `--doctor`를 붙입니다. 이 명령은 GUI를 열거나 문서를 읽지 않고,
+Node.js/npm/npx/Ollama 상태만 확인한 뒤 종료합니다.
 
 ```
 npx --yes github:cdsassj00/wikigraph3d#master --doctor
