@@ -1,0 +1,31 @@
+{
+  "name": "wikigraph3d",
+  "version": "0.1.0",
+  "description": "Point it at a folder of documents (.md/.txt/.pdf/.docx/.pptx) and get back one self-contained 3D searchable knowledge-graph HTML file. No server, no build step, no API key.",
+  "type": "module",
+  "bin": {
+    "wikigraph3d": "bin/cli.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "knowledge-graph",
+    "3d-force-graph",
+    "document-search",
+    "wiki",
+    "obsidian-alternative",
+    "cli"
+  ],
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.8.0",
+    "pdf-parse": "^1.1.1"
+  }
+}

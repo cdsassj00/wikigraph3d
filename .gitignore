@@ -1,0 +1,5 @@
+node_modules/
+*-graph.html
+.omc/
+.DS_Store
+*.log
