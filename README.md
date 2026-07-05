@@ -8,9 +8,9 @@ no API key, no account.
 npx github:cdsassj00/wikigraph3d ./my-notes
 ```
 
-That's it. It scans `./my-notes`, reads every supported document, and writes
-`./my-notes-graph.html` next to it. Double-click that file (or open it in any
-browser) to explore.
+That's it. It scans `./my-notes`, reads every supported document, writes
+`./my-notes-graph.html` next to it, and opens it in your browser automatically
+(pass `--no-open` to skip that).
 
 ## What it does
 
@@ -40,14 +40,14 @@ npx github:cdsassj00/wikigraph3d <folder> [options]
 
 Options:
   --out, -o <file>   Output HTML path (default: <folder>-graph.html)
-  --open             Open the result in your default browser when done
+  --no-open          Don't open the result in your browser automatically (default: opens it)
   --help, -h         Show help
 ```
 
 Example:
 
 ```
-npx github:cdsassj00/wikigraph3d ~/Documents/research --out research-graph.html --open
+npx github:cdsassj00/wikigraph3d ~/Documents/research --out research-graph.html
 ```
 
 Want it as a shorter local command? Clone it and `npm link` once:
