@@ -1,56 +1,49 @@
 # wikigraph3d
 
-Point it at a folder of documents and get back **one self-contained HTML file** —
-a 3D, searchable knowledge-graph view of that folder. No server, no build step,
-no API key, no account.
+문서 폴더 하나를 지정하면 **HTML 파일 하나**로 결과가 나옵니다 —
+그 폴더 안 문서들이 서로 어떻게 연결돼 있는지 3D로 보여주는 검색 가능한 지식 그래프입니다.
+서버도, 빌드 과정도, API 키도, 계정도 필요 없습니다.
 
 ```
-npx github:cdsassj00/wikigraph3d ./my-notes
+npx github:cdsassj00/wikigraph3d ./내문서폴더
 ```
 
-That's it. It scans `./my-notes`, reads every supported document, writes
-`./my-notes-graph.html` next to it, and opens it in your browser automatically
-(pass `--no-open` to skip that).
+이게 전부입니다. `./내문서폴더`를 스캔해서 지원하는 모든 문서를 읽고,
+`./내문서폴더-graph.html`을 만든 뒤 브라우저로 자동으로 열어줍니다
+(자동으로 안 열리게 하려면 `--no-open`을 붙이세요).
 
-## What it does
+## 뭘 해주나요
 
-1. **Scans** the folder recursively for `.md`, `.txt`, `.pdf`, `.docx`, `.pptx`.
-2. **Extracts** text from each file (pure JS parsers — nothing is uploaded
-   anywhere, nothing calls an LLM).
-3. **Links** documents to each other three ways:
-   - explicit `[[wikilink]]` references, if your markdown uses that syntax
-     (Obsidian-style)
-   - documents that live in the same subfolder (connected in a light ring, so
-     "things you filed together" stay visually together)
-   - documents that share enough distinctive vocabulary (a small built-in
-     TF-IDF keyword overlap — no API key, no embeddings service)
-4. **Renders** a single HTML file: a 3D force-directed graph (three.js /
-   3d-force-graph) with fuzzy search (Fuse.js), a type filter, a flat list-view
-   fallback for anyone who doesn't want to drive a 3D camera, and a resizable
-   detail panel that renders the clicked document's content
-   (sanitized with DOMPurify — the input is arbitrary user documents, so
-   nothing is trusted).
+1. **폴더를 스캔**합니다 — `.md`, `.txt`, `.pdf`, `.docx`, `.pptx`를 하위 폴더까지 다 찾습니다.
+2. **각 파일에서 텍스트를 추출**합니다 (전부 순수 JS로 처리 — 어디로도 업로드 안 되고, AI 호출도 없습니다).
+3. **문서끼리 3가지 방식으로 자동 연결**합니다:
+   - 마크다운에 `[[위키링크]]`(옵시디언 스타일) 문법을 이미 쓰고 있다면 그 링크
+   - 같은 하위 폴더 안에 있는 문서끼리 (원형으로 얇게 연결 — "같이 정리해둔 것들"이 그래프에서도 뭉쳐 보이게)
+   - 겹치는 핵심 단어가 많은 문서끼리 (자체 내장 TF-IDF 키워드 비교 — 별도 API나 임베딩 서비스 없음)
+4. **HTML 파일 하나로 렌더링**합니다: 3D 힘-그래프(three.js/3d-force-graph) + 오타 허용 검색(Fuse.js)
+   + 타입별 필터 + 3D 조작이 낯선 사람을 위한 목록(테이블) 보기 + 크기 조절되는 상세 패널.
+   (문서 내용은 임의의 사용자가 넣은 걸 신뢰할 수 없으므로 DOMPurify로 살균해서 렌더링합니다.)
 
-## Usage
+## 사용법
 
-Not published to npm — install directly from GitHub via npx:
+npm에는 올리지 않았습니다 — GitHub에서 바로 npx로 실행합니다:
 
 ```
-npx github:cdsassj00/wikigraph3d <folder> [options]
+npx github:cdsassj00/wikigraph3d <폴더> [옵션]
 
-Options:
-  --out, -o <file>   Output HTML path (default: <folder>-graph.html)
-  --no-open          Don't open the result in your browser automatically (default: opens it)
-  --help, -h         Show help
+옵션:
+  --out, -o <파일>   결과 HTML 경로 (기본값: <폴더>-graph.html)
+  --no-open          결과를 자동으로 브라우저에서 열지 않음 (기본값: 자동으로 열림)
+  --help, -h         도움말 표시
 ```
 
-Example:
+예시:
 
 ```
 npx github:cdsassj00/wikigraph3d ~/Documents/research --out research-graph.html
 ```
 
-Want it as a shorter local command? Clone it and `npm link` once:
+매번 `npx github:...`라고 치기 귀찮다면, 클론해서 `npm link`로 짧은 명령어를 만들 수 있습니다:
 
 ```
 git clone https://github.com/cdsassj00/wikigraph3d.git
@@ -58,33 +51,29 @@ cd wikigraph3d && npm install && npm link
 wikigraph3d ~/Documents/research
 ```
 
-## What it is not
+## 이 도구가 아닌 것
 
-- **Not a summarizer.** No AI is involved anywhere in this pipeline — that's
-  deliberate, so it works with zero configuration and zero cost. If you want
-  AI-written summaries and semantically-judged relationships between
-  documents, that's a different (larger) tool; this one is the free,
-  instant, "just show me the shape of this folder" version.
-- **Not a live server.** The output is a static file. Re-run the command to
-  refresh it after your documents change.
-- **Not exhaustive parsing.** PDF/DOCX/PPTX extraction is text-only (no
-  OCR of scanned/image-only pages, no tables-as-tables, no speaker notes).
+- **요약 도구가 아닙니다.** 이 파이프라인 어디에도 AI가 관여하지 않습니다 — 그래야 설정 없이,
+  비용 없이 바로 쓸 수 있기 때문입니다. AI가 문서를 요약하고 관계까지 판단해주길 원하신다면
+  이건 그 용도의 도구가 아닙니다 — 이건 "이 폴더 구조가 대충 어떻게 생겼는지 즉시, 무료로
+  보고 싶다"는 용도의 가벼운 버전입니다.
+- **실시간 서버가 아닙니다.** 결과물은 정적 파일입니다. 문서가 바뀌면 명령어를 다시 실행해서
+  새로 만들어야 합니다.
+- **완벽한 파싱이 아닙니다.** PDF/DOCX/PPTX는 텍스트만 추출합니다 (스캔·이미지 기반 페이지의
+  OCR 없음, 표를 표 형태로 인식 안 함, 발표자 노트 없음).
 
-## How the graph is colored
+## 그래프 색깔은 어떻게 정해지나요
 
-Each file's top-level subfolder becomes its "type" (and its color/legend
-entry). A flat folder with no subfolders gets a single type. There's no
-folder-naming convention to follow — however you already organize your
-documents is the ontology.
+각 파일이 속한 최상위 하위 폴더가 그 파일의 "타입"(=색깔·범례)이 됩니다. 하위 폴더가 없는
+평평한 폴더라면 타입이 하나로 통일됩니다. 폴더명을 특정 규칙에 맞출 필요는 없습니다 —
+지금 문서를 정리해둔 방식 그대로가 곧 온톨로지가 됩니다.
 
-## Privacy
+## 개인정보
 
-Everything runs locally. The three visualization libraries (three.js,
-3d-force-graph, marked, Fuse.js, DOMPurify) are loaded from CDN with
-Subresource Integrity hashes pinned — your document *content* never leaves
-your machine, only your browser's request for those static library files
-touches the network.
+모든 처리가 로컬에서 일어납니다. 시각화에 쓰이는 라이브러리 5개(three.js, 3d-force-graph,
+marked, Fuse.js, DOMPurify)는 CDN에서 불러오되 SRI(무결성 해시)를 고정해뒀습니다 — 문서
+*내용*은 어디로도 전송되지 않고, 그 정적 라이브러리 파일들을 내려받을 때만 네트워크를 씁니다.
 
-## License
+## 라이선스
 
 MIT
