@@ -6,6 +6,30 @@
 거기서 폴더를 선택해 작업을 시작합니다.
 Ollama를 쓰는 사람은 로컬 AI 검색과 문서 요약/태그를 선택적으로 붙일 수 있습니다.
 
+## 제일 쉬운 시작: Windows 초보자용
+
+Node.js가 설치되어 있는지 모르겠다면 PowerShell에서 아래 한 줄만 실행하세요.
+Node.js/npm/npx 설치 여부를 확인하고, 없으면 Node.js LTS 설치를 도와준 뒤 `wikigraph3d` GUI를 엽니다.
+
+```
+powershell -ExecutionPolicy Bypass -NoProfile -Command "irm https://raw.githubusercontent.com/cdsassj00/wikigraph3d/master/scripts/start-wikigraph3d.ps1 | iex"
+```
+
+이 방식이 부담스럽다면 직접 설치해도 됩니다.
+
+```
+winget install --id OpenJS.NodeJS.LTS -e --source winget
+npx --yes github:cdsassj00/wikigraph3d#master
+```
+
+환경 확인만 하고 싶을 때:
+
+```
+npx --yes github:cdsassj00/wikigraph3d#master --doctor
+```
+
+## 이미 Node.js가 있는 사용자
+
 ```
 npm install -g github:cdsassj00/wikigraph3d
 wikigraph3d

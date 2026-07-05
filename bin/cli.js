@@ -1,14 +1,70 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { SUPPORTED_EXT } from "../src/scan.js";
 import { buildGraphHtmlFromFolder } from "../src/build.js";
 import { startGui } from "../src/gui.js";
 import {
   DEFAULT_OLLAMA_BASE_URL,
   DEFAULT_OLLAMA_MODEL,
+  checkOllama,
 } from "../src/ollama.js";
+
+const MIN_NODE_MAJOR = 18;
+
+function nodeInstallHelp() {
+  return [
+    `wikigraph3d needs Node.js ${MIN_NODE_MAJOR} or newer.`,
+    "",
+    "Windows quick install:",
+    "  winget install --id OpenJS.NodeJS.LTS -e --source winget",
+    "  # then close and reopen PowerShell",
+    "  npx --yes github:cdsassj00/wikigraph3d#master",
+    "",
+    "No winget? Download Node.js LTS:",
+    "  https://nodejs.org/en/download",
+    "",
+    "Beginner Windows helper:",
+    "  powershell -ExecutionPolicy Bypass -NoProfile -Command \"irm https://raw.githubusercontent.com/cdsassj00/wikigraph3d/master/scripts/start-wikigraph3d.ps1 | iex\"",
+  ].join("\n");
+}
+
+function currentNodeMajor() {
+  const [major] = process.versions.node.split(".").map(Number);
+  return Number.isInteger(major) ? major : 0;
+}
+
+function assertSupportedNode() {
+  if (currentNodeMajor() >= MIN_NODE_MAJOR) return;
+  console.error(`Unsupported Node.js version: v${process.versions.node}`);
+  console.error(nodeInstallHelp());
+  process.exit(1);
+}
+
+function commandVersion(command, args = ["--version"]) {
+  const candidates = process.platform === "win32" && !/\.(cmd|bat|exe)$/i.test(command)
+    ? [`${command}.cmd`, command]
+    : [command];
+  for (const candidate of candidates) {
+    try {
+      if (process.platform === "win32" && /\.(cmd|bat)$/i.test(candidate)) {
+        return execFileSync("cmd.exe", ["/d", "/s", "/c", candidate, ...args], {
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"],
+        }).trim();
+      }
+
+      return execFileSync(candidate, args, {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim();
+    } catch {
+      // Try the next Windows command shim.
+    }
+  }
+  return null;
+}
 
 function parsePositiveInt(raw, flagName) {
   const value = Number(raw);
@@ -32,6 +88,7 @@ function parseArgs(argv) {
     gui: false,
     host: "127.0.0.1",
     port: 0,
+    doctor: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -45,6 +102,7 @@ function parseArgs(argv) {
     else if (a === "--ollama-model") args.ollamaModel = argv[++i] || DEFAULT_OLLAMA_MODEL;
     else if (a === "--ollama-url") args.ollamaUrl = argv[++i] || DEFAULT_OLLAMA_BASE_URL;
     else if (a === "--ollama-limit") args.ollamaLimit = parsePositiveInt(argv[++i], a);
+    else if (a === "--doctor") args.doctor = true;
     else if (a === "--help" || a === "-h") args.help = true;
     else if (!args.folder) args.folder = a;
   }
@@ -71,8 +129,36 @@ Options:
   --ollama-model <name>  Ollama model to use (default: ${DEFAULT_OLLAMA_MODEL})
   --ollama-url <url>     Ollama server URL (default: ${DEFAULT_OLLAMA_BASE_URL})
   --ollama-limit <n>     Enrich only the first n documents
+  --doctor               Check Node/npm/npx and optional Ollama readiness
   --help, -h             Show this help
 `);
+}
+
+async function runDoctor(args) {
+  const nodeOk = currentNodeMajor() >= MIN_NODE_MAJOR;
+  console.log("wikigraph3d environment check");
+  console.log(`Node.js: v${process.versions.node}${nodeOk ? " (ok)" : ` (needs ${MIN_NODE_MAJOR}+)`}`);
+  console.log(`npm: ${commandVersion("npm") || "not found"}`);
+  console.log(`npx: ${commandVersion("npx") || "not found"}`);
+
+  if (!nodeOk) {
+    console.log("");
+    console.log(nodeInstallHelp());
+    return;
+  }
+
+  const ollama = await checkOllama({
+    baseUrl: args.ollamaUrl,
+    model: args.ollamaModel,
+  });
+  if (!ollama.ok) {
+    console.log(`Ollama: not ready (${ollama.message})`);
+    console.log(ollama.setupHint);
+    return;
+  }
+  console.log(`Ollama: running at ${ollama.baseUrl}`);
+  console.log(`Ollama model ${args.ollamaModel}: ${ollama.modelAvailable ? "installed" : "not installed"}`);
+  if (!ollama.modelAvailable) console.log(`Run: ollama pull ${args.ollamaModel}`);
 }
 
 async function main() {
@@ -81,6 +167,11 @@ async function main() {
     printHelp();
     process.exit(0);
   }
+  if (args.doctor) {
+    await runDoctor(args);
+    process.exit(0);
+  }
+  assertSupportedNode();
 
   if (args.gui || !args.folder) {
     const gui = await startGui({ host: args.host, port: args.port, open: args.open });
